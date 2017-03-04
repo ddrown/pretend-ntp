@@ -123,7 +123,7 @@ void print_ntp(const struct ntp_msg *m, const struct ntptimes *t) {
   recv_time.tv_nsec = ntp_frac_to_ns(m->recv_time_fb);
   if(t != NULL) {
     printf(" ");
-    print_diff_ts(&recv_time, &t->after_sendto);
+    print_diff_ts(&recv_time, &t->before_sendto);
   }
 
   trans_time.tv_sec = ntp_s_to_unixtime(m->trans_time);
@@ -254,7 +254,7 @@ int main(int argc, char *argv[]) {
     printf(" ");
     print_diff_ts(&t.after_sendto, &t.before_sendto);
     printf(" ");
-    print_diff_ts(&t.after_recvmsg, &t.after_sendto);
+    print_diff_ts(&t.after_recvmsg, &t.before_sendto);
     printf("\n");
     fflush(stdout);
     sleep(1);
