@@ -1,0 +1,6 @@
+*.log
+*.png
+ntp-loop
+ntp-query
+pretend-ntp
+ts
