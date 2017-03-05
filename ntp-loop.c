@@ -12,130 +12,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define NTP_LEAP_NONE   0
-#define NTP_LEAP_61S    1
-#define NTP_LEAP_59S    2
-#define NTP_LEAP_UNSYNC 3
-#define NTP_VERS_4      4
-#define NTP_VERS_3      3
-#define NTP_MODE_RSVD   0
-#define NTP_MODE_SYMACT 1
-#define NTP_MODE_SYMPAS 2
-#define NTP_MODE_CLIENT 3
-#define NTP_MODE_SERVER 4
-#define NTP_MODE_BROADC 5
-#define NTP_MODE_CTRL   6
-#define NTP_MODE_PRIV   7
-struct ntp_msg {
-  uint8_t mode : 3;
-  uint8_t version : 3;
-  uint8_t leap : 2;
-  uint8_t stratum;
-  uint8_t poll;
-  int8_t precision;
-  uint16_t delay;
-  uint16_t delay_fb;
-  uint16_t dispersion;
-  uint16_t dispersion_fb;
-  uint32_t ident;
-  uint32_t ref_time;
-  uint32_t ref_time_fb;
-  uint32_t org_time;
-  uint32_t org_time_fb;
-  uint32_t recv_time;
-  uint32_t recv_time_fb;
-  uint32_t trans_time;
-  uint32_t trans_time_fb;
-};
-
-char *ntp_leap_str[] = {
-  "none", "61s", "59s", "unsync"
-};
-
-char *ntp_mode_str[] = {
-  "reserved", "sym. active", "sym. passive", "client", "server", "broadcast", "control msg", "private"
-};
-
-struct ntptimes {
-  struct timespec before_sendto,after_sendto,after_recvmsg;
-};
-
-// todo: NTP era
-uint32_t ntp_s_to_unixtime(uint32_t ntp_s) {
-  if(ntp_s == 0) {
-    return 0;
-  }
-  return ntohl(ntp_s) - 2208988800;
-}
-
-uint32_t unixtime_to_ntp_s(uint32_t unix_ts) {
-  return htonl(unix_ts + 2208988800);
-}
-
-uint32_t ns_to_ntp_frac(uint32_t ns) {
-  uint64_t fractional = ns;
-  fractional = fractional * 4294967296 / 1000000000;
-  return htonl(fractional);
-}
-
-uint32_t ntp_frac_to_ns(uint32_t ntp_fb) {
-  uint64_t fractional_s = ntohl(ntp_fb);
-  fractional_s = fractional_s * 1000000000 / 4294967296;
-  return fractional_s;
-}
-
-uint16_t ntp_frac_to_us(uint16_t ntp_fb) {
-  uint32_t fractional_s = ntohs(ntp_fb) * 1000000 / 65536;
-  return fractional_s;
-}
-
-void print_t(const struct timespec *t) {
-  printf("%ld.%09ld", t->tv_sec, t->tv_nsec);
-}
-
-void print_diff_ts(const struct timespec *t1, const struct timespec *t2) {
-  int32_t diff_s = t1->tv_sec - t2->tv_sec;
-  int32_t diff_ns = t1->tv_nsec - t2->tv_nsec;
-  if(diff_ns < -1000000000 || (diff_ns < 0 && diff_s > 0)) {
-    diff_s--;
-    diff_ns += 1000000000;
-  }
-  if(diff_ns > 0 && diff_s < 0) {
-    diff_s++;
-    diff_ns -= 1000000000;
-  }
-  if(diff_ns < 0 && diff_s == 0) {
-    printf("-0.%09d", diff_ns*-1);
-  } else if(diff_ns < 0) {
-    printf("%2d.%09d", diff_s, diff_ns*-1);
-  } else {
-    printf("%2d.%09d", diff_s, diff_ns);
-  }
-}
-
-void print_ntp(const struct ntp_msg *m, const struct ntptimes *t) {
-  struct timespec recv_time, trans_time;
-
-  printf(" %u.%06u", ntohs(m->delay), ntp_frac_to_us(m->delay_fb));
-  printf(" %u.%06u", ntohs(m->dispersion), ntp_frac_to_us(m->dispersion_fb));
-
-  recv_time.tv_sec = ntp_s_to_unixtime(m->recv_time);
-  recv_time.tv_nsec = ntp_frac_to_ns(m->recv_time_fb);
-  if(t != NULL) {
-    printf(" ");
-    print_diff_ts(&recv_time, &t->before_sendto);
-  }
-
-  trans_time.tv_sec = ntp_s_to_unixtime(m->trans_time);
-  trans_time.tv_nsec = ntp_frac_to_ns(m->trans_time_fb);
-  if(t != NULL) {
-    printf(" ");
-    print_diff_ts(&trans_time, &t->after_recvmsg);
-  }
-
-  printf(" ");
-  print_diff_ts(&trans_time, &recv_time);
-}
+#include "ntp_msg.h"
+#include "timestamp.h"
 
 void perror_exit(const char *msg) {
   perror(msg);
@@ -248,7 +126,7 @@ int main(int argc, char *argv[]) {
       print_t(&t.before_sendto);
       printf(" ");
 
-      print_ntp(&bufs, &t);
+      print_short_ntp(&bufs, &t);
     }
 
     printf(" ");

@@ -1,6 +1,8 @@
 *.log
 *.png
+*.o
 ntp-loop
 ntp-query
+ntp-exit
 pretend-ntp
 ts
