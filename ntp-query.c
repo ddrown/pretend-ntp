@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <errno.h>
 #include <string.h>
+#include <poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -14,6 +15,8 @@
 #include "ntp_msg.h"
 #include "timestamp.h"
 #include "util.h"
+
+#define DEFAULT_TIMEOUT_MS 500
 
 void print_addr(const struct sockaddr_in *a) {
   printf("%s:%u\n", inet_ntoa(a->sin_addr), ntohs(a->sin_port));
@@ -25,18 +28,16 @@ void print_pktinfo(const struct in_pktinfo *p) {
   printf("dst %s\n", inet_ntoa(p->ipi_addr));
 }
 
-#define NUM_MESSAGES 1
-#define TIMEOUT 1
 int main(int argc, char *argv[]) {
   struct ntp_msg bufs;
   struct timespec t[3];
-  int status[5];
+  int status[6];
   int sock, opt;
   struct sockaddr_in addr;
-  struct mmsghdr msgs[NUM_MESSAGES];
-  struct iovec iovecs[NUM_MESSAGES];
-  struct timespec timeout;
+  struct msghdr msg;
+  struct iovec iovec;
   uint8_t cmsgbuf[256];
+  struct pollfd readfd;
 
   if(argc < 3) {
     printf("%s [ip] [port]\n", argv[0]);
@@ -67,29 +68,33 @@ int main(int argc, char *argv[]) {
     perror_exit("setsockopt(IP_PKTINFO)");
   }
 
-  memset(msgs, 0, sizeof(msgs));
-  iovecs[0].iov_base          = &bufs;
-  iovecs[0].iov_len           = sizeof(bufs);
-  msgs[0].msg_hdr.msg_iov     = &iovecs[0];
-  msgs[0].msg_hdr.msg_iovlen  = 1;
-  msgs[0].msg_hdr.msg_name    = &addr;
-  msgs[0].msg_hdr.msg_namelen = sizeof(addr);
-  msgs[0].msg_hdr.msg_control = cmsgbuf;
-  msgs[0].msg_hdr.msg_controllen = sizeof(cmsgbuf);
+  memset(&msg, 0, sizeof(msg));
+  iovec.iov_base          = &bufs;
+  iovec.iov_len           = sizeof(bufs);
+  msg.msg_iov     = &iovec;
+  msg.msg_iovlen  = 1;
+  msg.msg_name    = &addr;
+  msg.msg_namelen = sizeof(addr);
+  msg.msg_control = cmsgbuf;
+  msg.msg_controllen = sizeof(cmsgbuf);
 
-  timeout.tv_sec = TIMEOUT;
-  timeout.tv_nsec = 0;
+  readfd.fd = sock;
+  readfd.events = POLLIN;
 
   status[0] = clock_gettime(CLOCK_REALTIME, &t[0]);
   status[1] = sendto(sock, &bufs, sizeof(bufs), 0, &addr, sizeof(addr));
   status[2] = clock_gettime(CLOCK_REALTIME, &t[1]);
-  status[3] = recvmmsg(sock, msgs, NUM_MESSAGES, MSG_WAITFORONE, &timeout);
+  status[3] = poll(&readfd, 1, DEFAULT_TIMEOUT_MS);
   status[4] = clock_gettime(CLOCK_REALTIME, &t[2]);
+  status[5] = recvmsg(sock, &msg, MSG_DONTWAIT);
+  if((status[5] < 0) && (errno != EAGAIN)) {
+    perror_exit("recvmsg");
+  }
   if(status[4] != 0) {
     perror_exit("clock_gettime #3");
   }
   if(status[3] < 0) {
-    perror_exit("recvmmsg");
+    perror_exit("poll");
   }
   if(status[2] != 0) {
     perror_exit("clock_gettime #2");
@@ -101,20 +106,20 @@ int main(int argc, char *argv[]) {
     perror_exit("clock_gettime #1");
   }
 
-  printf("=== %d messages received ===\n=== response ===\n", status[3]);
-  if(status[3] > 0) {
+  printf("=== %d packet(s) received ===\n=== response ===\n", status[3]);
+  if(status[5] > 0) {
     printf("rtt = ");
     print_diff_ts(&t[2], &t[1]);
     printf("\n");
 
     printf("source = ");
     print_addr(&addr);
-    for(struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgs[0].msg_hdr); cmsg != NULL; cmsg = CMSG_NXTHDR(&msgs[0].msg_hdr, cmsg)) {
+    for(struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
       if(cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_PKTINFO) {
         print_pktinfo((struct in_pktinfo *)CMSG_DATA(cmsg));
       }
     }
-    printf("len = %u\n", msgs[0].msg_len);
+    printf("len = %u\n", status[5]);
     print_ntp(&bufs, &t[1], &t[2]);
   }
 
