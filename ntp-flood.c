@@ -84,7 +84,8 @@ int main(int argc, char *argv[]) {
 
   gettimeofday(&start, NULL);
   uint64_t success = 0, loss = 0;
-  for(uint32_t i = 0; i < stop; i++) {
+  end.tv_sec = start.tv_sec + stop;
+  while(end.tv_sec > time(NULL)) {
     ntp_request(&bufs);
 
     status = ntp_xchange(sock,&bufs,(struct sockaddr *)&addr,&t,&msgs,DEFAULT_TIMEOUT_MS);
