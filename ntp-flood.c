@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
   timersub(&end, &start, &runtime);
   runtime_f = runtime.tv_sec + (runtime.tv_usec / 1000000.0);
 
-  printf("good %lu lost %lu (%.2f/s)\n", success, loss, (success+loss)/runtime_f);
+  printf("good %" UINT64_FMT " lost %" UINT64_FMT " (%.2f/s)\n", success, loss, (success+loss)/runtime_f);
   printf("rx   ");
   print_stats(&rx_stats);
   printf("tx   ");

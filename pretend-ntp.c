@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
       exit(EXIT_FAILURE);
     }
 
-    printf("reader thread %d done q=%lu !v=%lu !m=%lu ~s=%lu\n", tinfo[i].thread_num, tinfo[i].thread_queries,
+    printf("reader thread %d done q=%" UINT64_FMT " !v=%" UINT64_FMT " !m=%" UINT64_FMT " ~s=%" UINT64_FMT "\n", tinfo[i].thread_num, tinfo[i].thread_queries,
         tinfo[i].unknown_version, tinfo[i].unknown_mode, tinfo[i].failed_send);
   }
 
