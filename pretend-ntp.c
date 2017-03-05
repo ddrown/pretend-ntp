@@ -24,6 +24,7 @@ struct thread_info {
   uint64_t thread_queries;
   uint64_t unknown_version;
   uint64_t unknown_mode;
+  uint64_t failed_send;
   struct sockaddr_in *addr;
 };
 
@@ -31,17 +32,41 @@ void *ntp_server(void *arg) {
   struct thread_info *tinfo = arg;
   struct ntp_msg in, out;
   int sock;
-  int true_int = 1;
+  int optval;
+  socklen_t optlen;
 
-  tinfo->thread_queries = tinfo->unknown_version = tinfo->unknown_mode = 0;
+  tinfo->thread_queries = tinfo->unknown_version = tinfo->unknown_mode = tinfo->failed_send = 0;
 
   if((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
     perror_exit("socket");
   }
 
-  if(setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, &true_int, sizeof(true_int)) < 0) {
+  optval = 1;
+  if(setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)) < 0) {
     perror_exit("setsockopt SO_REUSEADDR");
   }
+
+  optval = 1024 * 1024; // 1MB RCVBUF
+  if(setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, sizeof(optval)) < 0) {
+    perror_exit("setsockopt SO_RCVBUF");
+  }
+
+  optval = 1024 * 1024; // 1MB SNDBUF
+  if(setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &optval, sizeof(optval)) < 0) {
+    perror_exit("setsockopt SO_RCVBUF");
+  }
+
+  optlen = sizeof(optval);
+  if(getsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, &optlen) < 0) {
+    perror_exit("getsockopt SO_RCVBUF");
+  }
+  printf("THD%d socket rcvbuf = %d\n", tinfo->thread_num, optval);
+
+  optlen = sizeof(optval);
+  if(getsockopt(sock, SOL_SOCKET, SO_SNDBUF, &optval, &optlen) < 0) {
+    perror_exit("getsockopt SO_SNDBUF");
+  }
+  printf("THD%d socket sndbuf = %d\n", tinfo->thread_num, optval);
 
   if(bind(sock, tinfo->addr, sizeof(*tinfo->addr)) < 0) {
     perror_exit("bind");
@@ -92,7 +117,9 @@ void *ntp_server(void *arg) {
     out.trans_time_fb = ns_to_ntp_frac(t.tv_nsec);
     out.trans_time = unixtime_to_ntp_s(t.tv_sec);
 
-    sendto(sock, &out, sizeof(out), 0, &source_addr, sizeof(source_addr));
+    if(sendto(sock, &out, sizeof(out), 0, &source_addr, sizeof(source_addr)) < 0) {
+      tinfo->failed_send++;
+    }
   }
 }
 
@@ -136,8 +163,8 @@ int main(int argc, char *argv[]) {
       exit(EXIT_FAILURE);
     }
 
-    printf("reader thread %d done q=%lu !v=%lu !m=%lu\n", tinfo[i].thread_num, tinfo[i].thread_queries,
-        tinfo[i].unknown_version, tinfo[i].unknown_mode);
+    printf("reader thread %d done q=%lu !v=%lu !m=%lu ~s=%lu\n", tinfo[i].thread_num, tinfo[i].thread_queries,
+        tinfo[i].unknown_version, tinfo[i].unknown_mode, tinfo[i].failed_send);
   }
 
   exit(EXIT_SUCCESS);
