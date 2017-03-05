@@ -1,9 +1,14 @@
 #include <arpa/inet.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <poll.h>
+#include <errno.h>
 
 #include "ntp_msg.h"
 #include "timestamp.h"
+#include "util.h"
 
 char *ntp_leap_str[] = {
   "none", "61s", "59s", "unsync"
@@ -114,3 +119,57 @@ void print_short_ntp(const struct ntp_msg *m, const struct ntptimes *t) {
   print_diff_ts(&trans_time, &recv_time);
 }
 
+void ntp_request(struct ntp_msg *bufs) {
+  struct timespec t;
+
+  memset(bufs, 0, sizeof(*bufs));
+  bufs->version = NTP_VERS_4;
+  bufs->mode = NTP_MODE_CLIENT;
+  clock_gettime(CLOCK_REALTIME, &t);
+  bufs->trans_time = unixtime_to_ntp_s(t.tv_sec);
+  bufs->trans_time_fb = ns_to_ntp_frac(t.tv_nsec);
+}
+
+int ntp_xchange(int sock, struct ntp_msg *bufs, const struct sockaddr *addr, struct ntptimes *t, struct msghdr *msgs, int timeout_ms) {
+  int status[6];
+  struct iovec iovecs;
+  struct pollfd readfd;
+
+  iovecs.iov_base     = bufs;
+  iovecs.iov_len      = sizeof(*bufs);
+  msgs->msg_iov        = &iovecs;
+  msgs->msg_iovlen     = 1;
+
+  readfd.fd = sock;
+  readfd.events = POLLIN;
+
+  status[0] = clock_gettime(CLOCK_REALTIME, &t->before_sendto);
+  status[1] = sendto(sock, bufs, sizeof(*bufs), 0, addr, sizeof(*addr));
+  status[2] = clock_gettime(CLOCK_REALTIME, &t->after_sendto);
+  status[3] = poll(&readfd, 1, timeout_ms);
+  status[4] = clock_gettime(CLOCK_REALTIME, &t->after_recvmsg);
+  status[5] = recvmsg(sock, msgs, MSG_DONTWAIT);
+  if(status[5] < 0) {
+    if(errno == EAGAIN) {
+      return 0;
+    }
+    perror_exit("recvmsg");
+  }
+  if(status[4] != 0) {
+    perror_exit("clock_gettime #3");
+  }
+  if(status[3] < 0) {
+    perror_exit("poll");
+  }
+  if(status[2] != 0) {
+    perror_exit("clock_gettime #2");
+  }
+  if(status[1] < 0) {
+    perror_exit("sendto");
+  }
+  if(status[0] != 0) {
+    perror_exit("clock_gettime #1");
+  }
+
+  return status[5];
+}

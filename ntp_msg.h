@@ -51,5 +51,7 @@ uint32_t ntp_frac_to_ns(uint32_t ntp_fb);
 uint16_t ntp_frac_to_us(uint16_t ntp_fb);
 void print_ntp(const struct ntp_msg *m, const struct timespec *send, const struct timespec *recv);
 void print_short_ntp(const struct ntp_msg *m, const struct ntptimes *t);
+void ntp_request(struct ntp_msg *bufs);
+int ntp_xchange(int sock, struct ntp_msg *bufs, const struct sockaddr *addr, struct ntptimes *t, struct msghdr *msgs, int timeout_ms);
 
 #endif

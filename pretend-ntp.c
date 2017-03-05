@@ -14,6 +14,7 @@
 #include <arpa/inet.h>
 
 #include "ntp_msg.h"
+#include "util.h"
 
 #define THREADS 4
 
@@ -25,11 +26,6 @@ struct thread_info {
   uint64_t unknown_mode;
   struct sockaddr_in *addr;
 };
-
-void perror_exit(const char *msg) {
-  perror(msg);
-  exit(EXIT_FAILURE);
-}
 
 void *ntp_server(void *arg) {
   struct thread_info *tinfo = arg;

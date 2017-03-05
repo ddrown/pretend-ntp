@@ -12,11 +12,7 @@
 #include <arpa/inet.h>
 
 #include "ntp_msg.h"
-
-void perror_exit(const char *msg) {
-  perror_exit(msg);
-  exit(1);
-}
+#include "util.h"
 
 #define NUM_MESSAGES 1
 #define TIMEOUT 1

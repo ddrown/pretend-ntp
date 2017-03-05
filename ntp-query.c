@@ -13,11 +13,7 @@
 
 #include "ntp_msg.h"
 #include "timestamp.h"
-
-void perror_exit(const char *msg) {
-  perror_exit(msg);
-  exit(1);
-}
+#include "util.h"
 
 void print_addr(const struct sockaddr_in *a) {
   printf("%s:%u\n", inet_ntoa(a->sin_addr), ntohs(a->sin_port));
