@@ -109,5 +109,6 @@ int main(int argc, char *argv[]) {
   timersub(&end, &start, &runtime);
   runtime_f = runtime.tv_sec + (runtime.tv_usec / 1000000.0);
 
-  printf("sent %" UINT64_FMT " received %" UINT64_FMT " %" UINT64_FMT "%% (%.2f/s)\n", sent, received, received*100/sent, (sent)/runtime_f);
+  printf("sent %" UINT64_FMT " received %" UINT64_FMT " %" UINT64_FMT "%% (tx %.2f/s rx %.2f/s)\n", sent, received, received*100/sent,
+      sent/runtime_f, received/runtime_f);
 }
