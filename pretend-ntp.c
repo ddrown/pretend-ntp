@@ -46,12 +46,12 @@ void *ntp_server(void *arg) {
     perror_exit("setsockopt SO_REUSEADDR");
   }
 
-  optval = 1024 * 1024; // 1MB RCVBUF
+  optval = 31250/2; // ~250us at 1G
   if(setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, sizeof(optval)) < 0) {
     perror_exit("setsockopt SO_RCVBUF");
   }
 
-  optval = 1024 * 1024; // 1MB SNDBUF
+  optval = 31250/2; // ~250us at 1G
   if(setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &optval, sizeof(optval)) < 0) {
     perror_exit("setsockopt SO_RCVBUF");
   }
