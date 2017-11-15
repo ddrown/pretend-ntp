@@ -1,5 +1,3 @@
-*.log
-*.png
 *.o
 ntp-loop
 ntp-query
@@ -7,4 +5,4 @@ ntp-exit
 ntp-flood
 ntp-flood2
 pretend-ntp
-ts
+graphs-and-data/
