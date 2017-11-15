@@ -2,6 +2,7 @@ This code is a proof of concept and is missing many useful things
 
 example load test (~250kpps, ~184Mbit, i3-540 w/e1000e NIC as server):
 
+```
 03:47:36 PM     IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
 03:47:37 PM       em1 251907.00 251904.00  23124.10  23125.47      0.00      0.00      1.00     18.94
 03:47:38 PM       em1 250613.00 250591.00  23005.19  23005.07      0.00      0.00      0.00     18.85
@@ -10,6 +11,7 @@ example load test (~250kpps, ~184Mbit, i3-540 w/e1000e NIC as server):
 average RTT at this load is 0.000128749 seconds
 max RTT at this load is 0.008097817 seconds
 packet loss under 0.01%
+```
 
 First missing thing: this code currently makes things up about the current fields in the NTP response:
   * stratum
