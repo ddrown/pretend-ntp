@@ -18,6 +18,8 @@ First missing thing: this code currently makes things up about the current field
   * ident
   * root dispersion
   * root distance
+  * leap second status
+  * precision
 
 Second missing thing: this code currently 100% trusts the CLOCK\_REALTIME clock value
 
