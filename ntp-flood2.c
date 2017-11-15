@@ -22,6 +22,9 @@
 #define DEFAULT_TIMEOUT_MS 2
 #define SOCKETS 4
 
+// understand this: people don't like it when their servers or infrastructure are flooded. 
+// Make sure you understand your impact and get permission from those you would impact
+#ifdef I_KNOW_WHAT_IM_DOING
 int main(int argc, char *argv[]) {
   int sock[SOCKETS];
   struct sockaddr_in addr;
@@ -112,3 +115,4 @@ int main(int argc, char *argv[]) {
   printf("sent %" UINT64_FMT " received %" UINT64_FMT " %" UINT64_FMT "%% (tx %.2f/s rx %.2f/s)\n", sent, received, received*100/sent,
       sent/runtime_f, received/runtime_f);
 }
+#endif

@@ -21,6 +21,9 @@
 
 #define DEFAULT_TIMEOUT_MS 2
 
+// understand this: people don't like it when their servers or infrastructure are flooded. 
+// Make sure you understand your impact and get permission from those you would impact
+#ifdef I_KNOW_WHAT_IM_DOING
 struct diff_stats {
   double min, max, total;
   uint32_t count;
@@ -129,3 +132,4 @@ int main(int argc, char *argv[]) {
   printf("rtt  ");
   print_stats(&rtt_stats);
 }
+#endif

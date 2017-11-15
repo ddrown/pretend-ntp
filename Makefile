@@ -1,6 +1,6 @@
 CFLAGS=-Wall -std=gnu11
 
-all: ntp-query pretend-ntp ntp-loop ntp-exit ntp-flood ntp-flood2
+all: ntp-query pretend-ntp ntp-loop ntp-exit #ntp-flood ntp-flood2
 
 ntp-query: ntp-query.o ntp_msg.o timestamp.o util.o
 	gcc $(CFLAGS) -o $@ $^
