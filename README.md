@@ -1,6 +1,6 @@
 This code is a proof of concept and is missing many useful things
 
-example load test (~250kpps, ~184Mbit, i3-540 w/e1000e NIC as server):
+example load test (~250kpps, ~184Mbit, i3-540 w/e1000e NIC as server, 4 server threads):
 
 ```
 03:47:36 PM     IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
@@ -22,3 +22,8 @@ First missing thing: this code currently makes things up about the current field
 Second missing thing: this code currently 100% trusts the CLOCK\_REALTIME clock value
 
 Third missing thing: everything else
+
+Files:
+  * ntp-loop.c - query a server once per second and print out timing information
+  * ntp-query.c - query a server and print the request/response
+  * pretend-ntp.c - NTP server
