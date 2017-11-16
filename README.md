@@ -29,3 +29,7 @@ Files:
   * ntp-loop.c - query a server once per second and print out timing information
   * ntp-query.c - query a server and print the request/response
   * pretend-ntp.c - NTP server
+
+
+See also:
+  * https://github.com/mlichvar/rsntp
